@@ -332,6 +332,20 @@
     background:var(--coral-soft);
     color:var(--coral);
   }
+  .custom-count-input{
+    width:100%;
+    height:40px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:0 12px;
+    font-size:13px;
+    color:var(--ink);
+    font-family:inherit;
+  }
+  .custom-count-input:focus{
+    border-color:var(--coral);
+    outline:none;
+  }
   .stepper-btn{
     width:36px;
     height:36px;
@@ -364,17 +378,22 @@
     grid-template-columns:repeat(auto-fill, minmax(78px, 1fr));
     gap:8px;
   }
+  .score-card{
+    display:flex;
+    flex-direction:column;
+  }
   .score-btn{
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
     gap:2px;
-    height:52px;
+    height:48px;
     padding:0 4px;
     border:1.5px solid var(--border);
+    border-bottom:none;
     background:#fff;
-    border-radius:10px;
+    border-radius:10px 10px 0 0;
     cursor:pointer;
   }
   .score-btn .score-num{
@@ -398,6 +417,16 @@
   .score-btn.is-correct .score-num,
   .score-btn.is-correct .score-val{
     color:var(--coral);
+  }
+  .score-penalty{
+    height:22px;
+    border:1.5px solid var(--border);
+    border-radius:0 0 10px 10px;
+    background:#F7F0EC;
+    color:#B23A2E;
+    font-size:10.5px;
+    font-weight:700;
+    cursor:pointer;
   }
   .btn-listen{
     width:100%;
@@ -461,6 +490,10 @@
           <button class="qty-btn" data-count="10">10문제</button>
           <button class="qty-btn" data-count="20">20문제</button>
           <button class="qty-btn active" data-count="30">30문제</button>
+        </div>
+        <div class="quiz-setup-row">
+          <input type="number" id="customCountInput" class="custom-count-input"
+                 min="1" max="30" placeholder="직접 입력 (1~30)">
         </div>
         <div class="quiz-setup-label">참가자 (채점용 · 이름을 눌러 수정)</div>
         <div class="player-name-list" id="playerNameList"></div>
@@ -540,8 +573,9 @@
         <button class="practice-reset" id="scoreResetBtn">점수 초기화</button>
       </div>
       <div class="score-grid" id="scoreGrid"></div>
-      <div class="practice-hint">이번 문제를 맞힌 사람 번호를 눌러 체크하세요. 다음 문제로 넘어가면
-        체크 표시만 풀리고 누적 점수는 그대로 남아요.</div>
+      <div class="practice-hint">이번 문제를 맞힌 사람 이름을 눌러 체크하세요. 다음 문제로 넘어가면
+        체크 표시만 풀리고 누적 점수는 그대로 남아요. "−1 벌점"은 손들고 방해하거나
+        순서 없이 끼어드는 등 반칙 시 언제든 눌러서 감점할 수 있어요.</div>
     </div>
 
     <div class="foot">단어를 탭하면 다시 들려요 · 기기 내장 음성 사용(인터넷 없이도 재생)<br>진행 체크는 이 기기의 브라우저에 자동 저장돼요<br><span id="setIdTag"></span></div>
@@ -553,7 +587,7 @@ var WORDS = [{"w": "horrible", "m": "끔찍한", "ex": "The weather was horrible
 // SET_ID: 이 word_player.html 버전 식별용 일련번호(YYYYMMDD-NN).
 // 단어를 바꿔서 새로 배포할 때마다 이 값도 새 날짜/번호로 바꿔줄 것
 // (PDF 파일명 규칙과 동일한 형식 — 같이 생성한 PDF와 세트를 맞춰서 추적하기 위함).
-var SET_ID = "20260805-10";
+var SET_ID = "20260805-12";
 document.getElementById('setIdTag').textContent = "세트 " + SET_ID;
 
 // order: 화면에 보여줄 순서(인덱스 배열). 셔플해도 WORDS 자체는 안 건드리고
@@ -620,12 +654,14 @@ meanBtn.addEventListener('click', function(){
   setMeanRevealed(!meanRevealed);
 });
 
-// 퀴즈 모드에서 수동으로 누를 때만 재생: 단어 → 곧바로 예문까지 이어서 들려줌
-// (자동 다음 문제 넘어감 없음 — 여기서 끝, 버튼을 또 눌러야 다시 재생됨)
+// 퀴즈 모드에서 수동으로 누를 때만 재생: 단어 → (연습모드와 같은 간격) → 예문
+// (자동 다음 문제 넘어감은 없음 — 다 들으면 여기서 끝, 버튼을 또 눌러야 다시 재생됨)
 function quizPlayWordAndExample(){
   var item = WORDS[order[i]];
   speak(item.w, function(){
-    speak(item.ex, null);
+    setTimeout(function(){
+      speak(item.ex, null);
+    }, WORD_PAUSE_MS);
   });
 }
 
@@ -682,6 +718,10 @@ function speak(text, onEnd){
     u.pitch = 1;
     if (onEnd) u.onend = onEnd;
     u.onerror = function(e){
+      // cancel()로 의도적으로 끊은 경우 'canceled'/'interrupted'가 뜨는데,
+      // 이건 실제 오류가 아니라 다음 발음을 재생하려고 이전 걸 끊은 정상 동작임.
+      // 소리는 실제로 잘 나오므로 사용자에게 오류로 보여줄 필요 없음.
+      if (e && (e.error === 'canceled' || e.error === 'interrupted')) return;
       statusEl.textContent = "음성 재생 오류: " + (e && e.error ? e.error : "알 수 없음");
     };
     speechSynthesis.speak(u);
@@ -717,7 +757,9 @@ function setModeTag(){
 
 // ---------- 퀴즈 설정(문제 수 · 참가자 별명) ----------
 var quizQuestionCount = 30;
-var playerNames = ['참가자 1', '참가자 2', '참가자 3', '참가자 4'];
+var playerNames = ['', '', '', ''];
+
+var customCountInput = document.getElementById('customCountInput');
 
 document.querySelectorAll('#countButtons .qty-btn').forEach(function(btn){
   btn.addEventListener('click', function(){
@@ -726,7 +768,18 @@ document.querySelectorAll('#countButtons .qty-btn').forEach(function(btn){
     });
     btn.classList.add('active');
     quizQuestionCount = parseInt(btn.getAttribute('data-count'), 10);
+    customCountInput.value = '';
   });
+});
+
+customCountInput.addEventListener('input', function(){
+  var v = parseInt(customCountInput.value, 10);
+  if (!isNaN(v) && v >= 1){
+    quizQuestionCount = Math.min(v, WORDS.length);
+    document.querySelectorAll('#countButtons .qty-btn').forEach(function(b){
+      b.classList.remove('active');
+    });
+  }
 });
 
 function renderPlayerNameInputs(){
@@ -753,7 +806,7 @@ playerMinusBtn.addEventListener('click', function(){
 });
 playerPlusBtn.addEventListener('click', function(){
   if (playerNames.length >= 40) return;
-  playerNames.push('참가자 ' + (playerNames.length + 1));
+  playerNames.push('');
   renderPlayerNameInputs();
 });
 
@@ -787,15 +840,34 @@ function renderScoreboard(){
   for (var p = 0; p < quizPlayerCount; p++){
     var label = (quizPlayerNames[p] && quizPlayerNames[p].trim())
       ? quizPlayerNames[p].trim() : ('참가자 ' + (p+1));
+    var card = document.createElement('div');
+    card.className = 'score-card';
+
     var btn = document.createElement('button');
     btn.className = 'score-btn' + (quizMarkedThisQ[p] ? ' is-correct' : '');
     btn.setAttribute('data-player', p);
     btn.innerHTML = '<span class="score-num">' + label + '</span>' +
                      '<span class="score-val">' + quizScores[p] + '</span>';
-    scoreGridEl.appendChild(btn);
+
+    var penaltyBtn = document.createElement('button');
+    penaltyBtn.className = 'score-penalty';
+    penaltyBtn.setAttribute('data-player', p);
+    penaltyBtn.title = '벌점 -1 (손들고 방해, 새치기 등)';
+    penaltyBtn.textContent = '−1 벌점';
+
+    card.appendChild(btn);
+    card.appendChild(penaltyBtn);
+    scoreGridEl.appendChild(card);
   }
 }
 scoreGridEl.addEventListener('click', function(e){
+  var penaltyBtn = e.target.closest('.score-penalty');
+  if (penaltyBtn){
+    var pp = parseInt(penaltyBtn.getAttribute('data-player'), 10);
+    quizScores[pp] -= 1;
+    renderScoreboard();
+    return;
+  }
   var btn = e.target.closest('.score-btn');
   if (!btn) return;
   var p = parseInt(btn.getAttribute('data-player'), 10);
