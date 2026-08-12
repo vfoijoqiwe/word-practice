@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>단어 듣기 · Word Player</title>
+<style>
+  :root{
+    --coral:#C8503C;
+    --coral-soft:#FBEDE8;
+    --ink:#1F2A44;
+    --sub:#5A6478;
+    --border:#E2D8CD;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:var(--coral-soft);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .card{
+    width:100%;
+    max-width:420px;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:32px 28px 28px;
+    text-align:center;
+    box-shadow:0 8px 30px rgba(31,42,68,.08);
+  }
+  .progress{
+    color:var(--sub);
+    font-size:14px;
+    font-weight:600;
+    letter-spacing:.02em;
+  }
+  .mode-tag{
+    display:inline-block;
+    margin-left:6px;
+    padding:1px 8px;
+    border-radius:99px;
+    background:var(--coral-soft);
+    color:var(--coral);
+    font-size:11px;
+    font-weight:700;
+    vertical-align:1px;
+  }
+  .bar{
+    height:6px;
+    background:var(--border);
+    border-radius:99px;
+    margin:10px 0 26px;
+    overflow:hidden;
+  }
+  .bar-fill{
+    height:100%;
+    background:var(--coral);
+    border-radius:99px;
+    transition:width .25s ease;
+    width:0%;
+  }
+  .word{
+    font-size:38px;
+    font-weight:800;
+    color:var(--ink);
+    line-height:1.15;
+    word-break:keep-all;
+    min-height:46px;
+  }
+  .word.is-kr-prompt{
+    font-size:28px;
+    color:var(--coral);
+  }
+  .mean{
+    margin-top:8px;
+    font-size:17px;
+    color:var(--sub);
+    min-height:24px;
+  }
+  .example{
+    margin-top:20px;
+    background:var(--coral-soft);
+    border-radius:12px;
+    padding:14px 16px;
+    font-size:15px;
+    color:var(--ink);
+    min-height:24px;
+    line-height:1.5;
+  }
+  .controls{
+    display:flex;
+    gap:10px;
+    margin-top:26px;
+  }
+  button{
+    font-family:inherit;
+    border:none;
+    border-radius:14px;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn-replay{
+    flex:0 0 56px;
+    height:56px;
+    background:#fff;
+    border:2px solid var(--coral);
+    color:var(--coral);
+    font-size:22px;
+  }
+  .btn-pause{
+    flex:0 0 56px;
+    height:56px;
+    background:#fff;
+    border:2px solid var(--ink);
+    color:var(--ink);
+    font-size:20px;
+  }
+  .btn-pause.is-paused{
+    background:var(--coral);
+    border-color:var(--coral);
+    color:#fff;
+  }
+  .btn-next{
+    flex:1;
+    height:56px;
+    background:var(--coral);
+    color:#fff;
+    font-size:18px;
+    font-weight:700;
+  }
+  .btn-next:disabled{
+    background:#D9C9C2;
+    cursor:default;
+  }
+  .row-secondary{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+  }
+  .btn-prev, .btn-start, .btn-shuffle{
+    flex:1;
+    height:44px;
+    background:none;
+    color:var(--sub);
+    font-size:13px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:0 4px;
+  }
+  .btn-shuffle.is-on{
+    border-color:var(--coral);
+    color:var(--coral);
+    background:var(--coral-soft);
+    font-weight:700;
+  }
+  .start-shuffle-row{
+    margin-top:10px;
+  }
+  .start-shuffle-row .btn-shuffle{
+    width:100%;
+    height:44px;
+  }
+  .study-mode-row{
+    margin-top:18px;
+    text-align:left;
+  }
+  .study-mode-label{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--sub);
+    margin-bottom:8px;
+  }
+  .study-mode-buttons{
+    display:flex;
+    gap:8px;
+  }
+  .mode-btn{
+    flex:1;
+    height:54px;
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--sub);
+    font-size:14px;
+    font-weight:700;
+    font-family:inherit;
+    border-radius:10px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:2px;
+    line-height:1.25;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mode-btn .mode-sub{
+    font-size:10.5px;
+    font-weight:500;
+    opacity:.85;
+  }
+  .mode-btn.active{
+    border-color:var(--coral);
+    background:var(--coral-soft);
+    color:var(--coral);
+  }
+  .study-mode-hint{
+    margin-top:8px;
+    font-size:11px;
+    color:#9aa3b2;
+    line-height:1.5;
+  }
+  .set-select-row{
+    margin-bottom:16px;
+    text-align:left;
+  }
+  .set-select{
+    width:100%;
+    height:44px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:0 12px;
+    font-size:14px;
+    font-weight:700;
+    color:var(--ink);
+    font-family:inherit;
+    background:#fff;
+    -webkit-appearance:none;
+    appearance:none;
+  }
+  .ko{
+    margin-top:6px;
+    padding-top:6px;
+    border-top:1px dashed rgba(31,42,68,.12);
+    font-size:13px;
+    min-height:18px;
+  }
+  .btn-mean{
+    width:100%;
+    height:44px;
+    margin-top:16px;
+    background:#fff;
+    border:2px dashed var(--sub);
+    color:var(--sub);
+    font-size:14px;
+    font-weight:700;
+    border-radius:12px;
+  }
+  .btn-mean.is-revealed{
+    border-style:solid;
+    border-color:var(--coral);
+    color:var(--coral);
+    background:var(--coral-soft);
+  }
+  .start-screen .word{font-size:22px; color:var(--sub); font-weight:600;}
+  .hidden{display:none;}
+  .foot{
+    margin-top:18px;
+    font-size:11.5px;
+    color:#9aa3b2;
+  }
+  .status{
+    margin-top:10px;
+    font-size:12.5px;
+    color:#B23A2E;
+    min-height:16px;
+  }
+  .practice{
+    margin-top:20px;
+    text-align:left;
+    border-top:1px dashed rgba(31,42,68,.15);
+    padding-top:14px;
+  }
+  .practice-title{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--sub);
+    margin-bottom:8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .practice-reset{
+    font-size:11.5px;
+    color:#9aa3b2;
+    background:none;
+    border:none;
+    text-decoration:underline;
+    cursor:pointer;
+    padding:0;
+    border-radius:0;
+  }
+  .practice-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:7px 0;
+  }
+  .practice-row + .practice-row{
+    border-top:1px solid rgba(31,42,68,.06);
+  }
+  .practice-label{
+    font-size:13px;
+    color:var(--ink);
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    white-space:nowrap;
+  }
+  .practice-boxes{
+    display:flex;
+    gap:9px;
+  }
+  .practice-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 0 4px;
+  }
+  .practice-header-boxes{
+    display:flex;
+    gap:9px;
+  }
+  .practice-header-boxes span{
+    flex:0 0 20px;
+    width:20px;
+    box-sizing:border-box;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    font-size:10px;
+    color:#9aa3b2;
+    font-weight:700;
+    white-space:nowrap;
+    overflow:hidden;
+  }
+  .practice-hint{
+    margin-top:10px;
+    font-size:11.5px;
+    color:#9aa3b2;
+    line-height:1.5;
+  }
+  .practice-boxes input[type=checkbox]{
+    flex:0 0 20px;
+    width:20px;
+    height:20px;
+    margin:0;
+    accent-color:var(--coral);
+    cursor:pointer;
+  }
+  .quiz-setup{
+    margin-top:14px;
+    text-align:left;
+    position:relative;
+  }
+  .quiz-back{
+    background:none;
+    border:none;
+    color:var(--sub);
+    font-size:12.5px;
+    padding:0;
+    margin-bottom:10px;
+    cursor:pointer;
+    text-decoration:underline;
+  }
+  .quiz-setup-label{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--sub);
+    margin:12px 0 8px;
+  }
+  .quiz-setup-row{
+    display:flex;
+    gap:8px;
+  }
+  .quiz-setup-row-center{
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+  }
+  .qty-btn{
+    flex:1;
+    height:40px;
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--sub);
+    font-size:13px;
+    font-weight:600;
+    border-radius:10px;
+  }
+  .qty-btn.active{
+    border-color:var(--coral);
+    background:var(--coral-soft);
+    color:var(--coral);
+  }
+  .custom-count-input{
+    width:100%;
+    height:40px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:0 12px;
+    font-size:13px;
+    color:var(--ink);
+    font-family:inherit;
+  }
+  .custom-count-input:focus{
+    border-color:var(--coral);
+    outline:none;
+  }
+  .stepper-btn{
+    width:36px;
+    height:36px;
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--ink);
+    font-size:18px;
+    font-weight:700;
+    border-radius:10px;
+  }
+  .stepper-value{
+    font-size:18px;
+    font-weight:700;
+    color:var(--ink);
+    min-width:24px;
+    text-align:center;
+  }
+  .stepper-unit{
+    font-size:13px;
+    color:var(--sub);
+  }
+  .scoreboard{
+    margin-top:20px;
+    text-align:left;
+    border-top:1px dashed rgba(31,42,68,.15);
+    padding-top:14px;
+  }
+  .score-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(78px, 1fr));
+    gap:8px;
+  }
+  .score-card{
+    display:flex;
+    flex-direction:column;
+  }
+  .score-btn{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:2px;
+    height:48px;
+    padding:0 4px;
+    border:1.5px solid var(--border);
+    border-bottom:none;
+    background:#fff;
+    border-radius:10px 10px 0 0;
+    cursor:pointer;
+  }
+  .score-btn .score-num{
+    font-size:11px;
+    color:var(--sub);
+    font-weight:600;
+    max-width:100%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .score-btn .score-val{
+    font-size:16px;
+    color:var(--ink);
+    font-weight:800;
+  }
+  .score-btn.is-correct{
+    border-color:var(--coral);
+    background:var(--coral-soft);
+  }
+  .score-btn.is-correct .score-num,
+  .score-btn.is-correct .score-val{
+    color:var(--coral);
+  }
+  .score-penalty{
+    height:22px;
+    border:1.5px solid var(--border);
+    border-radius:0 0 10px 10px;
+    background:#F7F0EC;
+    color:#B23A2E;
+    font-size:10.5px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .btn-listen{
+    width:100%;
+    height:44px;
+    margin-top:10px;
+    background:#fff;
+    border:2px solid var(--coral);
+    color:var(--coral);
+    font-size:14px;
+    font-weight:700;
+    border-radius:12px;
+  }
+  .btn-home{
+    width:100%;
+    height:36px;
+    margin-top:8px;
+    background:none;
+    border:none;
+    color:var(--sub);
+    font-size:12.5px;
+    text-decoration:underline;
+    cursor:pointer;
+  }
+  .player-name-list{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .player-name-input{
+    height:36px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:0 10px;
+    font-size:13px;
+    color:var(--ink);
+    font-family:inherit;
+    min-width:0;
+  }
+</style>
+</head>
+<body>
+  <div class="card hidden" id="gateCard">
+    <div class="word" style="font-size:24px;">🔒 비밀번호 입력</div>
+    <div class="mean">선생님이 알려주신 비밀번호를 입력해 주세요</div>
+    <div style="margin-top:20px;">
+      <input type="password" id="gatePwInput" class="custom-count-input"
+             style="width:100%;height:48px;font-size:16px;text-align:center;"
+             placeholder="비밀번호" autocomplete="off">
+    </div>
+    <div class="status" id="gateError" style="min-height:16px;"></div>
+    <button class="btn-next" id="gateSubmitBtn" style="width:100%;margin-top:6px;">입장하기</button>
+  </div>
+
+  <div class="card hidden" id="card">
+    <div class="progress"><span id="progress">0 / 30</span><span class="mode-tag hidden" id="modeTag">퀴즈 · 무작위</span></div>
+    <div class="bar"><div class="bar-fill" id="barFill"></div></div>
+
+    <div id="startScreen">
+      <div class="set-select-row hidden" id="setSelectRow">
+        <div class="study-mode-label">복습 범위</div>
+        <select class="set-select" id="setSelect"></select>
+      </div>
+      <div class="word" id="startTitleEl">단어 30개를 들어요</div>
+      <div class="mean">시작하면 2초 간격으로 자동으로 다음 단어까지 들려줘요</div>
+
+      <div class="study-mode-row" id="studyModeRow">
+        <div class="study-mode-label">학습 방식</div>
+        <div class="study-mode-buttons">
+          <button type="button" class="mode-btn active" id="modeKoHiddenBtn">영한<span class="mode-sub">단어 보임 · 뜻 안 보임</span></button>
+          <button type="button" class="mode-btn" id="modeEnHiddenBtn">한영<span class="mode-sub">뜻 보임 · 단어 안 보임</span></button>
+        </div>
+        <div class="study-mode-hint">'순서대로 시작'에 적용돼요 · '섞어서 시작(퀴즈)'은 기존처럼 문제마다 무작위로 나와요</div>
+      </div>
+
+      <div class="controls">
+        <button class="btn-next" id="startBtn" style="flex:1">순서대로 시작</button>
+      </div>
+      <div class="start-shuffle-row">
+        <button class="btn-shuffle" id="shuffleStartBtn">🔀 섞어서 시작 (퀴즈용)</button>
+      </div>
+
+      <div class="quiz-setup hidden" id="quizSetup">
+        <button class="quiz-back" id="quizBackBtn">← 뒤로</button>
+        <div class="quiz-setup-label">문제 수</div>
+        <div class="quiz-setup-row" id="countButtons"></div>
+        <div class="quiz-setup-row">
+          <input type="number" id="customCountInput" class="custom-count-input"
+                 min="1" max="30" placeholder="직접 입력 (1~30)">
+        </div>
+        <div class="quiz-setup-label">참가자 (채점용 · 이름을 눌러 수정)</div>
+        <div class="player-name-list" id="playerNameList"></div>
+        <div class="quiz-setup-row quiz-setup-row-center">
+          <button class="stepper-btn" id="playerMinus">−</button>
+          <span class="stepper-value" id="playerCountVal">4</span>
+          <span class="stepper-unit">명</span>
+          <button class="stepper-btn" id="playerPlus">+</button>
+        </div>
+        <button class="btn-next" id="quizConfirmBtn" style="width:100%;margin-top:14px;">퀴즈 시작</button>
+      </div>
+    </div>
+
+    <div id="playScreen" class="hidden">
+      <div class="word" id="wordEl"></div>
+      <div class="mean" id="meanEl"></div>
+      <div class="example">
+        <div id="exEl"></div>
+        <div class="ko" id="koEl"></div>
+      </div>
+      <button class="btn-mean" id="meanBtn">뜻 보기</button>
+      <button class="btn-listen hidden" id="quizListenBtn">🔊 발음 듣기</button>
+      <div class="status" id="statusEl"></div>
+      <div class="controls">
+        <button class="btn-pause" id="pauseBtn" title="일시정지">&#10074;&#10074;</button>
+        <button class="btn-replay" id="replayBtn" title="다시 듣기">&#8635;</button>
+        <button class="btn-next" id="nextBtn">다음 단어</button>
+      </div>
+      <div class="row-secondary">
+        <button class="btn-prev" id="prevBtn">이전 단어</button>
+        <button class="btn-shuffle" id="shuffleBtn">🔀 섞기</button>
+        <button class="btn-start" id="restartBtn">처음부터</button>
+      </div>
+      <button class="btn-home" id="homeBtn">🏠 처음 화면으로</button>
+    </div>
+
+    <div class="practice" id="practiceCheck">
+      <div class="practice-title">
+        <span id="practiceTitleEl">🙋 30개 전체 진행 체크</span>
+        <button class="practice-reset" id="practiceResetBtn">전체 초기화</button>
+      </div>
+      <div class="practice-header">
+        <span class="practice-header-label"></span>
+        <span class="practice-header-boxes"><span>1회</span><span>2회</span><span>3회</span></span>
+      </div>
+      <div class="practice-row">
+        <span class="practice-label">👂 Listening</span>
+        <span class="practice-boxes">
+          <input type="checkbox" data-g="l" data-n="0">
+          <input type="checkbox" data-g="l" data-n="1">
+          <input type="checkbox" data-g="l" data-n="2">
+        </span>
+      </div>
+      <div class="practice-row">
+        <span class="practice-label">🔁 Following</span>
+        <span class="practice-boxes">
+          <input type="checkbox" data-g="f" data-n="0">
+          <input type="checkbox" data-g="f" data-n="1">
+          <input type="checkbox" data-g="f" data-n="2">
+        </span>
+      </div>
+      <div class="practice-row">
+        <span class="practice-label">🗣️ Shadowing</span>
+        <span class="practice-boxes">
+          <input type="checkbox" data-g="s" data-n="0">
+          <input type="checkbox" data-g="s" data-n="1">
+          <input type="checkbox" data-g="s" data-n="2">
+        </span>
+      </div>
+      <div class="practice-hint" id="practiceHintEl">단어 30개를 한 번 다 들으면(Listening) 1회 체크 → 다 따라 말하면(Following)
+        1회 체크 → 다 섀도잉하면(Shadowing) 1회 체크. 이렇게 3바퀴 반복해요.</div>
+    </div>
+
+    <div class="scoreboard hidden" id="scoreboard">
+      <div class="practice-title">
+        <span>🏆 채점 (정답자 체크)</span>
+        <button class="practice-reset" id="scoreResetBtn">점수 초기화</button>
+      </div>
+      <div class="score-grid" id="scoreGrid"></div>
+      <div class="practice-hint">이번 문제를 맞힌 사람 이름을 눌러 체크하세요. 다음 문제로 넘어가면
+        체크 표시만 풀리고 누적 점수는 그대로 남아요. "−1 벌점"은 손들고 방해하거나
+        순서 없이 끼어드는 등 반칙 시 언제든 눌러서 감점할 수 있어요.</div>
+    </div>
+
+    <div class="foot">단어를 탭하면 다시 들려요 · 기기 내장 음성 사용(인터넷 없이도 재생)<br>진행 체크는 이 기기의 브라우저에 자동 저장돼요<br><span id="setIdTag"></span></div>
+  </div>
+
+<script>
+var WORDS = [{"w": "horrible", "m": "끔찍한", "ex": "The weather was horrible today.", "ko": "오늘 날씨가 끔찍했어요."}, {"w": "embarrassed", "m": "당황한", "ex": "I felt embarrassed when I fell down.", "ko": "나는 넘어졌을 때 당황했어요."}, {"w": "worried", "m": "걱정하는", "ex": "My mom was worried about me.", "ko": "우리 엄마는 나를 걱정하셨어요."}, {"w": "nervous", "m": "긴장한", "ex": "I feel nervous before the test.", "ko": "나는 시험 전에 긴장돼요."}, {"w": "curious", "m": "호기심 많은", "ex": "I am curious about space.", "ko": "나는 우주가 궁금해요."}, {"w": "shy", "m": "부끄러운", "ex": "The little boy is very shy.", "ko": "그 어린 소년은 매우 수줍어요."}, {"w": "confident", "m": "자신감 있는", "ex": "She looks confident on stage.", "ko": "그녀는 무대에서 자신감 있어 보여요."}, {"w": "proud", "m": "자랑스러운", "ex": "I am proud of my team.", "ko": "나는 우리 팀이 자랑스러워요."}, {"w": "happened", "m": "일어났다", "ex": "What happened at school today?", "ko": "오늘 학교에서 무슨 일이 있었니?"}, {"w": "forgot", "m": "잊어버렸다", "ex": "I forgot my umbrella at home.", "ko": "나는 집에 우산을 두고 왔어요."}, {"w": "perfect", "m": "완벽한", "ex": "Her drawing is perfect.", "ko": "그녀의 그림은 완벽해요."}, {"w": "amazing", "m": "놀라운", "ex": "The fireworks were amazing.", "ko": "불꽃놀이는 놀라웠어요."}, {"w": "contest", "m": "대회", "ex": "I joined a singing contest.", "ko": "나는 노래 대회에 참가했어요."}, {"w": "fought", "m": "싸웠다 (fight-fought)", "ex": "The brothers fought over a toy.", "ko": "그 형제는 장난감 때문에 싸웠어요."}, {"w": "score", "m": "점수", "ex": "What was your test score?", "ko": "네 시험 점수는 몇 점이었니?"}, {"w": "angry", "m": "화난", "ex": "He was angry at his friend.", "ko": "그는 친구에게 화가 났어요."}, {"w": "lonely", "m": "외로운", "ex": "I feel lonely without my dog.", "ko": "나는 강아지가 없으니 외로워요."}, {"w": "mad", "m": "몹시 화난", "ex": "Mom got mad at me.", "ko": "엄마가 나에게 몹시 화가 나셨어요."}, {"w": "apologized", "m": "사과했다", "ex": "I apologized to my sister.", "ko": "나는 여동생에게 사과했어요."}, {"w": "admire", "m": "존경하다", "ex": "I admire my teacher.", "ko": "나는 선생님을 존경해요."}, {"w": "mean", "m": "못된, 심술궂은", "ex": "Don't be mean to your friends.", "ko": "친구들에게 못되게 굴지 마."}, {"w": "forgave", "m": "용서했다 (forgive-forgave)", "ex": "She forgave her brother.", "ko": "그녀는 오빠를 용서했어요."}, {"w": "jealous", "m": "질투하는", "ex": "I was jealous of his new bike.", "ko": "나는 그의 새 자전거가 부러웠어요."}, {"w": "sorry", "m": "미안한", "ex": "I'm sorry for being late.", "ko": "늦어서 미안해요."}, {"w": "because", "m": "왜냐하면", "ex": "I was late because of the rain.", "ko": "비 때문에 늦었어요."}, {"w": "idea", "m": "생각", "ex": "That's a great idea!", "ko": "그거 좋은 생각이야!"}, {"w": "alone", "m": "혼자", "ex": "I like to read alone.", "ko": "나는 혼자 책 읽는 것을 좋아해요."}, {"w": "better", "m": "더 나은", "ex": "I feel better now.", "ko": "나는 이제 기분이 나아졌어요."}, {"w": "excited", "m": "신난", "ex": "I am excited for my birthday.", "ko": "나는 생일이라서 신나요."}, {"w": "surprised", "m": "놀란", "ex": "I was surprised by the gift.", "ko": "나는 선물을 보고 놀랐어요."}, {"w": "wait", "m": "기다리다", "ex": "Please wait for me.", "ko": "나를 기다려 주세요."}, {"w": "smell", "m": "냄새, 냄새가 나다", "ex": "The cookies smell good.", "ko": "그 쿠키는 좋은 냄새가 나요."}, {"w": "grow up", "m": "자라다, 성장하다", "ex": "I want to grow up fast.", "ko": "나는 빨리 자라고 싶어요."}, {"w": "smaller", "m": "더 작은", "ex": "My hand is smaller than yours.", "ko": "내 손은 네 손보다 더 작아요."}, {"w": "board game", "m": "보드게임", "ex": "Let's play a board game.", "ko": "우리 보드게임 하자."}, {"w": "cloth", "m": "천, 헝겊", "ex": "I clean the desk with a cloth.", "ko": "나는 천으로 책상을 닦아요."}, {"w": "higher", "m": "더 높은", "ex": "This tree is higher than my house.", "ko": "이 나무는 우리 집보다 더 높아요."}, {"w": "elevator", "m": "승강기", "ex": "We take the elevator to the fifth floor.", "ko": "우리는 5층까지 승강기를 타요."}, {"w": "restaurant", "m": "음식점", "ex": "My dad works at a restaurant.", "ko": "우리 아빠는 음식점에서 일하세요."}, {"w": "careful", "m": "조심하는", "ex": "Be careful! The floor is wet.", "ko": "조심해! 바닥이 젖었어."}, {"w": "upside down", "m": "거꾸로", "ex": "The picture is upside down.", "ko": "그 그림이 거꾸로 걸려 있어요."}, {"w": "return", "m": "돌아오다", "ex": "I return home at six.", "ko": "나는 여섯 시에 집에 돌아와요."}, {"w": "sneakers", "m": "운동화", "ex": "My new sneakers are white.", "ko": "내 새 운동화는 하얀색이에요."}, {"w": "clean up", "m": "정리하다", "ex": "Let's clean up the classroom.", "ko": "우리 교실을 정리하자."}, {"w": "underground", "m": "지하, 지하의", "ex": "The parking lot is underground.", "ko": "그 주차장은 지하에 있어요."}, {"w": "get on", "m": "타다", "ex": "Get on the bus, please.", "ko": "버스에 타세요."}, {"w": "laugh", "m": "웃다", "ex": "We laugh at the funny movie.", "ko": "우리는 그 재미있는 영화를 보고 웃어요."}, {"w": "tell time", "m": "시간을 말하다", "ex": "Can you tell time?", "ko": "너는 시간을 말할 수 있니?"}, {"w": "wrist", "m": "손목", "ex": "My watch is on my wrist.", "ko": "내 시계는 손목에 있어요."}, {"w": "minute", "m": "분", "ex": "The class starts in five minutes.", "ko": "수업은 5분 후에 시작해요."}, {"w": "bring", "m": "가져오다", "ex": "Bring your book to school.", "ko": "학교에 네 책을 가져와."}, {"w": "warm up", "m": "몸을 풀다", "ex": "We warm up before the game.", "ko": "우리는 경기 전에 몸을 풀어요."}, {"w": "blow", "m": "불다", "ex": "Blow out the candles!", "ko": "촛불을 불어서 꺼!"}, {"w": "direction", "m": "방향", "ex": "Which direction is the park?", "ko": "공원은 어느 방향이니?"}, {"w": "get together", "m": "함께 모이다", "ex": "We get together every Sunday.", "ko": "우리는 일요일마다 함께 모여요."}, {"w": "pour", "m": "붓다", "ex": "Pour the milk into the cup.", "ko": "컵에 우유를 부으세요."}, {"w": "exchange", "m": "교환하다", "ex": "I want to exchange this hat.", "ko": "나는 이 모자를 교환하고 싶어요."}, {"w": "flap", "m": "(날개를) 퍼덕이다", "ex": "The birds flap their wings.", "ko": "새들이 날개를 퍼덕여요."}, {"w": "decorate", "m": "꾸미다", "ex": "We decorate the tree together.", "ko": "우리는 함께 나무를 꾸며요."}, {"w": "complete", "m": "완성하다", "ex": "I complete my homework.", "ko": "나는 숙제를 완성해요."}, {"w": "would", "m": "~해 주겠어요? (정중한 부탁·제안)", "ex": "Would you open the window?", "ko": "창문 좀 열어 주시겠어요?"}, {"w": "could", "m": "~해 주시겠어요? (정중한 부탁)", "ex": "Could you help me with my bag?", "ko": "제 가방 드는 것 좀 도와주시겠어요?"}, {"w": "share", "m": "나누다, 공유하다", "ex": "Can we share this pizza?", "ko": "우리 이 피자 같이 나눠 먹을까요?"}, {"w": "pass", "m": "건네주다", "ex": "Could you pass the salt, please?", "ko": "소금 좀 건네주시겠어요?"}, {"w": "sure", "m": "그럼요, 물론이죠", "ex": "Sure, I can help you.", "ko": "물론이죠, 제가 도와드릴게요."}, {"w": "come", "m": "오다", "ex": "Would you come to my party?", "ko": "제 파티에 와 주시겠어요?"}, {"w": "read", "m": "읽다", "ex": "Could you read this poem for us?", "ko": "이 시를 우리에게 읽어 주시겠어요?"}, {"w": "play", "m": "놀다, (게임을) 하다", "ex": "Would you like to play a game?", "ko": "게임을 하시겠어요?"}, {"w": "together", "m": "함께", "ex": "Let's clean the room together.", "ko": "우리 함께 방을 청소하자."}, {"w": "poem", "m": "시", "ex": "She wrote a short poem.", "ko": "그녀는 짧은 시를 썼어요."}, {"w": "interesting", "m": "흥미로운, 재미있는", "ex": "This poem is very interesting.", "ko": "이 시는 정말 흥미로워요."}, {"w": "going", "m": "가는 중인, ~할 예정인", "ex": "Are you going to the library?", "ko": "너는 도서관에 갈 거니?"}, {"w": "help", "m": "돕다, 도움", "ex": "Could you help me carry this box?", "ko": "이 상자 옮기는 것 좀 도와주시겠어요?"}, {"w": "please", "m": "부디, 제발 (공손한 부탁)", "ex": "Please close the door.", "ko": "문 좀 닫아 주세요."}, {"w": "may", "m": "~해도 될까요? (허락을 구할 때)", "ex": "May I use your pencil?", "ko": "네 연필을 써도 될까요?"}];
+
+// ---------- 여러 단어 목록 중 복습 범위 선택 (선택 기능) ----------
+// SETS가 null이면(일반 세트 페이지) 드롭다운 없이 WORDS를 그대로 씀.
+// SETS에 키를 2개 이상 채우면(복습 페이지) 드롭다운이 자동으로 생기고,
+// 고른 항목의 words가 WORDS를 대체함. 이 방식 덕분에 나중에 세트가 늘어나도
+// "복습 페이지 파일명/주소"는 절대 안 바뀌고, 그 안의 선택지만 늘어남
+// ({key: {label, words}, ...} 형태 — key 순서 = Object.keys 순서 = 드롭다운 순서).
+var SETS = {"all": {"label": "전체 (누적 75개)", "words": [{"w": "horrible", "m": "끔찍한", "ex": "The weather was horrible today.", "ko": "오늘 날씨가 끔찍했어요."}, {"w": "embarrassed", "m": "당황한", "ex": "I felt embarrassed when I fell down.", "ko": "나는 넘어졌을 때 당황했어요."}, {"w": "worried", "m": "걱정하는", "ex": "My mom was worried about me.", "ko": "우리 엄마는 나를 걱정하셨어요."}, {"w": "nervous", "m": "긴장한", "ex": "I feel nervous before the test.", "ko": "나는 시험 전에 긴장돼요."}, {"w": "curious", "m": "호기심 많은", "ex": "I am curious about space.", "ko": "나는 우주가 궁금해요."}, {"w": "shy", "m": "부끄러운", "ex": "The little boy is very shy.", "ko": "그 어린 소년은 매우 수줍어요."}, {"w": "confident", "m": "자신감 있는", "ex": "She looks confident on stage.", "ko": "그녀는 무대에서 자신감 있어 보여요."}, {"w": "proud", "m": "자랑스러운", "ex": "I am proud of my team.", "ko": "나는 우리 팀이 자랑스러워요."}, {"w": "happened", "m": "일어났다", "ex": "What happened at school today?", "ko": "오늘 학교에서 무슨 일이 있었니?"}, {"w": "forgot", "m": "잊어버렸다", "ex": "I forgot my umbrella at home.", "ko": "나는 집에 우산을 두고 왔어요."}, {"w": "perfect", "m": "완벽한", "ex": "Her drawing is perfect.", "ko": "그녀의 그림은 완벽해요."}, {"w": "amazing", "m": "놀라운", "ex": "The fireworks were amazing.", "ko": "불꽃놀이는 놀라웠어요."}, {"w": "contest", "m": "대회", "ex": "I joined a singing contest.", "ko": "나는 노래 대회에 참가했어요."}, {"w": "fought", "m": "싸웠다 (fight-fought)", "ex": "The brothers fought over a toy.", "ko": "그 형제는 장난감 때문에 싸웠어요."}, {"w": "score", "m": "점수", "ex": "What was your test score?", "ko": "네 시험 점수는 몇 점이었니?"}, {"w": "angry", "m": "화난", "ex": "He was angry at his friend.", "ko": "그는 친구에게 화가 났어요."}, {"w": "lonely", "m": "외로운", "ex": "I feel lonely without my dog.", "ko": "나는 강아지가 없으니 외로워요."}, {"w": "mad", "m": "몹시 화난", "ex": "Mom got mad at me.", "ko": "엄마가 나에게 몹시 화가 나셨어요."}, {"w": "apologized", "m": "사과했다", "ex": "I apologized to my sister.", "ko": "나는 여동생에게 사과했어요."}, {"w": "admire", "m": "존경하다", "ex": "I admire my teacher.", "ko": "나는 선생님을 존경해요."}, {"w": "mean", "m": "못된, 심술궂은", "ex": "Don't be mean to your friends.", "ko": "친구들에게 못되게 굴지 마."}, {"w": "forgave", "m": "용서했다 (forgive-forgave)", "ex": "She forgave her brother.", "ko": "그녀는 오빠를 용서했어요."}, {"w": "jealous", "m": "질투하는", "ex": "I was jealous of his new bike.", "ko": "나는 그의 새 자전거가 부러웠어요."}, {"w": "sorry", "m": "미안한", "ex": "I'm sorry for being late.", "ko": "늦어서 미안해요."}, {"w": "because", "m": "왜냐하면", "ex": "I was late because of the rain.", "ko": "비 때문에 늦었어요."}, {"w": "idea", "m": "생각", "ex": "That's a great idea!", "ko": "그거 좋은 생각이야!"}, {"w": "alone", "m": "혼자", "ex": "I like to read alone.", "ko": "나는 혼자 책 읽는 것을 좋아해요."}, {"w": "better", "m": "더 나은", "ex": "I feel better now.", "ko": "나는 이제 기분이 나아졌어요."}, {"w": "excited", "m": "신난", "ex": "I am excited for my birthday.", "ko": "나는 생일이라서 신나요."}, {"w": "surprised", "m": "놀란", "ex": "I was surprised by the gift.", "ko": "나는 선물을 보고 놀랐어요."}, {"w": "wait", "m": "기다리다", "ex": "Please wait for me.", "ko": "나를 기다려 주세요."}, {"w": "smell", "m": "냄새, 냄새가 나다", "ex": "The cookies smell good.", "ko": "그 쿠키는 좋은 냄새가 나요."}, {"w": "grow up", "m": "자라다, 성장하다", "ex": "I want to grow up fast.", "ko": "나는 빨리 자라고 싶어요."}, {"w": "smaller", "m": "더 작은", "ex": "My hand is smaller than yours.", "ko": "내 손은 네 손보다 더 작아요."}, {"w": "board game", "m": "보드게임", "ex": "Let's play a board game.", "ko": "우리 보드게임 하자."}, {"w": "cloth", "m": "천, 헝겊", "ex": "I clean the desk with a cloth.", "ko": "나는 천으로 책상을 닦아요."}, {"w": "higher", "m": "더 높은", "ex": "This tree is higher than my house.", "ko": "이 나무는 우리 집보다 더 높아요."}, {"w": "elevator", "m": "승강기", "ex": "We take the elevator to the fifth floor.", "ko": "우리는 5층까지 승강기를 타요."}, {"w": "restaurant", "m": "음식점", "ex": "My dad works at a restaurant.", "ko": "우리 아빠는 음식점에서 일하세요."}, {"w": "careful", "m": "조심하는", "ex": "Be careful! The floor is wet.", "ko": "조심해! 바닥이 젖었어."}, {"w": "upside down", "m": "거꾸로", "ex": "The picture is upside down.", "ko": "그 그림이 거꾸로 걸려 있어요."}, {"w": "return", "m": "돌아오다", "ex": "I return home at six.", "ko": "나는 여섯 시에 집에 돌아와요."}, {"w": "sneakers", "m": "운동화", "ex": "My new sneakers are white.", "ko": "내 새 운동화는 하얀색이에요."}, {"w": "clean up", "m": "정리하다", "ex": "Let's clean up the classroom.", "ko": "우리 교실을 정리하자."}, {"w": "underground", "m": "지하, 지하의", "ex": "The parking lot is underground.", "ko": "그 주차장은 지하에 있어요."}, {"w": "get on", "m": "타다", "ex": "Get on the bus, please.", "ko": "버스에 타세요."}, {"w": "laugh", "m": "웃다", "ex": "We laugh at the funny movie.", "ko": "우리는 그 재미있는 영화를 보고 웃어요."}, {"w": "tell time", "m": "시간을 말하다", "ex": "Can you tell time?", "ko": "너는 시간을 말할 수 있니?"}, {"w": "wrist", "m": "손목", "ex": "My watch is on my wrist.", "ko": "내 시계는 손목에 있어요."}, {"w": "minute", "m": "분", "ex": "The class starts in five minutes.", "ko": "수업은 5분 후에 시작해요."}, {"w": "bring", "m": "가져오다", "ex": "Bring your book to school.", "ko": "학교에 네 책을 가져와."}, {"w": "warm up", "m": "몸을 풀다", "ex": "We warm up before the game.", "ko": "우리는 경기 전에 몸을 풀어요."}, {"w": "blow", "m": "불다", "ex": "Blow out the candles!", "ko": "촛불을 불어서 꺼!"}, {"w": "direction", "m": "방향", "ex": "Which direction is the park?", "ko": "공원은 어느 방향이니?"}, {"w": "get together", "m": "함께 모이다", "ex": "We get together every Sunday.", "ko": "우리는 일요일마다 함께 모여요."}, {"w": "pour", "m": "붓다", "ex": "Pour the milk into the cup.", "ko": "컵에 우유를 부으세요."}, {"w": "exchange", "m": "교환하다", "ex": "I want to exchange this hat.", "ko": "나는 이 모자를 교환하고 싶어요."}, {"w": "flap", "m": "(날개를) 퍼덕이다", "ex": "The birds flap their wings.", "ko": "새들이 날개를 퍼덕여요."}, {"w": "decorate", "m": "꾸미다", "ex": "We decorate the tree together.", "ko": "우리는 함께 나무를 꾸며요."}, {"w": "complete", "m": "완성하다", "ex": "I complete my homework.", "ko": "나는 숙제를 완성해요."}, {"w": "would", "m": "~해 주겠어요? (정중한 부탁·제안)", "ex": "Would you open the window?", "ko": "창문 좀 열어 주시겠어요?"}, {"w": "could", "m": "~해 주시겠어요? (정중한 부탁)", "ex": "Could you help me with my bag?", "ko": "제 가방 드는 것 좀 도와주시겠어요?"}, {"w": "share", "m": "나누다, 공유하다", "ex": "Can we share this pizza?", "ko": "우리 이 피자 같이 나눠 먹을까요?"}, {"w": "pass", "m": "건네주다", "ex": "Could you pass the salt, please?", "ko": "소금 좀 건네주시겠어요?"}, {"w": "sure", "m": "그럼요, 물론이죠", "ex": "Sure, I can help you.", "ko": "물론이죠, 제가 도와드릴게요."}, {"w": "come", "m": "오다", "ex": "Would you come to my party?", "ko": "제 파티에 와 주시겠어요?"}, {"w": "read", "m": "읽다", "ex": "Could you read this poem for us?", "ko": "이 시를 우리에게 읽어 주시겠어요?"}, {"w": "play", "m": "놀다, (게임을) 하다", "ex": "Would you like to play a game?", "ko": "게임을 하시겠어요?"}, {"w": "together", "m": "함께", "ex": "Let's clean the room together.", "ko": "우리 함께 방을 청소하자."}, {"w": "poem", "m": "시", "ex": "She wrote a short poem.", "ko": "그녀는 짧은 시를 썼어요."}, {"w": "interesting", "m": "흥미로운, 재미있는", "ex": "This poem is very interesting.", "ko": "이 시는 정말 흥미로워요."}, {"w": "going", "m": "가는 중인, ~할 예정인", "ex": "Are you going to the library?", "ko": "너는 도서관에 갈 거니?"}, {"w": "help", "m": "돕다, 도움", "ex": "Could you help me carry this box?", "ko": "이 상자 옮기는 것 좀 도와주시겠어요?"}, {"w": "please", "m": "부디, 제발 (공손한 부탁)", "ex": "Please close the door.", "ko": "문 좀 닫아 주세요."}, {"w": "may", "m": "~해도 될까요? (허락을 구할 때)", "ex": "May I use your pencil?", "ko": "네 연필을 써도 될까요?"}]}, "emotion": {"label": "감정 표현 (emotion-words, 30개)", "words": [{"w": "horrible", "m": "끔찍한", "ex": "The weather was horrible today.", "ko": "오늘 날씨가 끔찍했어요."}, {"w": "embarrassed", "m": "당황한", "ex": "I felt embarrassed when I fell down.", "ko": "나는 넘어졌을 때 당황했어요."}, {"w": "worried", "m": "걱정하는", "ex": "My mom was worried about me.", "ko": "우리 엄마는 나를 걱정하셨어요."}, {"w": "nervous", "m": "긴장한", "ex": "I feel nervous before the test.", "ko": "나는 시험 전에 긴장돼요."}, {"w": "curious", "m": "호기심 많은", "ex": "I am curious about space.", "ko": "나는 우주가 궁금해요."}, {"w": "shy", "m": "부끄러운", "ex": "The little boy is very shy.", "ko": "그 어린 소년은 매우 수줍어요."}, {"w": "confident", "m": "자신감 있는", "ex": "She looks confident on stage.", "ko": "그녀는 무대에서 자신감 있어 보여요."}, {"w": "proud", "m": "자랑스러운", "ex": "I am proud of my team.", "ko": "나는 우리 팀이 자랑스러워요."}, {"w": "happened", "m": "일어났다", "ex": "What happened at school today?", "ko": "오늘 학교에서 무슨 일이 있었니?"}, {"w": "forgot", "m": "잊어버렸다", "ex": "I forgot my umbrella at home.", "ko": "나는 집에 우산을 두고 왔어요."}, {"w": "perfect", "m": "완벽한", "ex": "Her drawing is perfect.", "ko": "그녀의 그림은 완벽해요."}, {"w": "amazing", "m": "놀라운", "ex": "The fireworks were amazing.", "ko": "불꽃놀이는 놀라웠어요."}, {"w": "contest", "m": "대회", "ex": "I joined a singing contest.", "ko": "나는 노래 대회에 참가했어요."}, {"w": "fought", "m": "싸웠다 (fight-fought)", "ex": "The brothers fought over a toy.", "ko": "그 형제는 장난감 때문에 싸웠어요."}, {"w": "score", "m": "점수", "ex": "What was your test score?", "ko": "네 시험 점수는 몇 점이었니?"}, {"w": "angry", "m": "화난", "ex": "He was angry at his friend.", "ko": "그는 친구에게 화가 났어요."}, {"w": "lonely", "m": "외로운", "ex": "I feel lonely without my dog.", "ko": "나는 강아지가 없으니 외로워요."}, {"w": "mad", "m": "몹시 화난", "ex": "Mom got mad at me.", "ko": "엄마가 나에게 몹시 화가 나셨어요."}, {"w": "apologized", "m": "사과했다", "ex": "I apologized to my sister.", "ko": "나는 여동생에게 사과했어요."}, {"w": "admire", "m": "존경하다", "ex": "I admire my teacher.", "ko": "나는 선생님을 존경해요."}, {"w": "mean", "m": "못된, 심술궂은", "ex": "Don't be mean to your friends.", "ko": "친구들에게 못되게 굴지 마."}, {"w": "forgave", "m": "용서했다 (forgive-forgave)", "ex": "She forgave her brother.", "ko": "그녀는 오빠를 용서했어요."}, {"w": "jealous", "m": "질투하는", "ex": "I was jealous of his new bike.", "ko": "나는 그의 새 자전거가 부러웠어요."}, {"w": "sorry", "m": "미안한", "ex": "I'm sorry for being late.", "ko": "늦어서 미안해요."}, {"w": "because", "m": "왜냐하면", "ex": "I was late because of the rain.", "ko": "비 때문에 늦었어요."}, {"w": "idea", "m": "생각", "ex": "That's a great idea!", "ko": "그거 좋은 생각이야!"}, {"w": "alone", "m": "혼자", "ex": "I like to read alone.", "ko": "나는 혼자 책 읽는 것을 좋아해요."}, {"w": "better", "m": "더 나은", "ex": "I feel better now.", "ko": "나는 이제 기분이 나아졌어요."}, {"w": "excited", "m": "신난", "ex": "I am excited for my birthday.", "ko": "나는 생일이라서 신나요."}, {"w": "surprised", "m": "놀란", "ex": "I was surprised by the gift.", "ko": "나는 선물을 보고 놀랐어요."}]}, "action": {"label": "생활 동작 표현 (action-words, 30개)", "words": [{"w": "wait", "m": "기다리다", "ex": "Please wait for me.", "ko": "나를 기다려 주세요."}, {"w": "smell", "m": "냄새, 냄새가 나다", "ex": "The cookies smell good.", "ko": "그 쿠키는 좋은 냄새가 나요."}, {"w": "grow up", "m": "자라다, 성장하다", "ex": "I want to grow up fast.", "ko": "나는 빨리 자라고 싶어요."}, {"w": "smaller", "m": "더 작은", "ex": "My hand is smaller than yours.", "ko": "내 손은 네 손보다 더 작아요."}, {"w": "board game", "m": "보드게임", "ex": "Let's play a board game.", "ko": "우리 보드게임 하자."}, {"w": "cloth", "m": "천, 헝겊", "ex": "I clean the desk with a cloth.", "ko": "나는 천으로 책상을 닦아요."}, {"w": "higher", "m": "더 높은", "ex": "This tree is higher than my house.", "ko": "이 나무는 우리 집보다 더 높아요."}, {"w": "elevator", "m": "승강기", "ex": "We take the elevator to the fifth floor.", "ko": "우리는 5층까지 승강기를 타요."}, {"w": "restaurant", "m": "음식점", "ex": "My dad works at a restaurant.", "ko": "우리 아빠는 음식점에서 일하세요."}, {"w": "careful", "m": "조심하는", "ex": "Be careful! The floor is wet.", "ko": "조심해! 바닥이 젖었어."}, {"w": "upside down", "m": "거꾸로", "ex": "The picture is upside down.", "ko": "그 그림이 거꾸로 걸려 있어요."}, {"w": "return", "m": "돌아오다", "ex": "I return home at six.", "ko": "나는 여섯 시에 집에 돌아와요."}, {"w": "sneakers", "m": "운동화", "ex": "My new sneakers are white.", "ko": "내 새 운동화는 하얀색이에요."}, {"w": "clean up", "m": "정리하다", "ex": "Let's clean up the classroom.", "ko": "우리 교실을 정리하자."}, {"w": "underground", "m": "지하, 지하의", "ex": "The parking lot is underground.", "ko": "그 주차장은 지하에 있어요."}, {"w": "get on", "m": "타다", "ex": "Get on the bus, please.", "ko": "버스에 타세요."}, {"w": "laugh", "m": "웃다", "ex": "We laugh at the funny movie.", "ko": "우리는 그 재미있는 영화를 보고 웃어요."}, {"w": "tell time", "m": "시간을 말하다", "ex": "Can you tell time?", "ko": "너는 시간을 말할 수 있니?"}, {"w": "wrist", "m": "손목", "ex": "My watch is on my wrist.", "ko": "내 시계는 손목에 있어요."}, {"w": "minute", "m": "분", "ex": "The class starts in five minutes.", "ko": "수업은 5분 후에 시작해요."}, {"w": "bring", "m": "가져오다", "ex": "Bring your book to school.", "ko": "학교에 네 책을 가져와."}, {"w": "warm up", "m": "몸을 풀다", "ex": "We warm up before the game.", "ko": "우리는 경기 전에 몸을 풀어요."}, {"w": "blow", "m": "불다", "ex": "Blow out the candles!", "ko": "촛불을 불어서 꺼!"}, {"w": "direction", "m": "방향", "ex": "Which direction is the park?", "ko": "공원은 어느 방향이니?"}, {"w": "get together", "m": "함께 모이다", "ex": "We get together every Sunday.", "ko": "우리는 일요일마다 함께 모여요."}, {"w": "pour", "m": "붓다", "ex": "Pour the milk into the cup.", "ko": "컵에 우유를 부으세요."}, {"w": "exchange", "m": "교환하다", "ex": "I want to exchange this hat.", "ko": "나는 이 모자를 교환하고 싶어요."}, {"w": "flap", "m": "(날개를) 퍼덕이다", "ex": "The birds flap their wings.", "ko": "새들이 날개를 퍼덕여요."}, {"w": "decorate", "m": "꾸미다", "ex": "We decorate the tree together.", "ko": "우리는 함께 나무를 꾸며요."}, {"w": "complete", "m": "완성하다", "ex": "I complete my homework.", "ko": "나는 숙제를 완성해요."}]}, "request": {"label": "Unit 3 부탁·제안 표현 (request-words, 30개)", "words": [{"w": "would", "m": "~해 주겠어요? (정중한 부탁·제안)", "ex": "Would you open the window?", "ko": "창문 좀 열어 주시겠어요?"}, {"w": "could", "m": "~해 주시겠어요? (정중한 부탁)", "ex": "Could you help me with my bag?", "ko": "제 가방 드는 것 좀 도와주시겠어요?"}, {"w": "share", "m": "나누다, 공유하다", "ex": "Can we share this pizza?", "ko": "우리 이 피자 같이 나눠 먹을까요?"}, {"w": "pass", "m": "건네주다", "ex": "Could you pass the salt, please?", "ko": "소금 좀 건네주시겠어요?"}, {"w": "sure", "m": "그럼요, 물론이죠", "ex": "Sure, I can help you.", "ko": "물론이죠, 제가 도와드릴게요."}, {"w": "come", "m": "오다", "ex": "Would you come to my party?", "ko": "제 파티에 와 주시겠어요?"}, {"w": "read", "m": "읽다", "ex": "Could you read this poem for us?", "ko": "이 시를 우리에게 읽어 주시겠어요?"}, {"w": "play", "m": "놀다, (게임을) 하다", "ex": "Would you like to play a game?", "ko": "게임을 하시겠어요?"}, {"w": "together", "m": "함께", "ex": "Let's clean the room together.", "ko": "우리 함께 방을 청소하자."}, {"w": "poem", "m": "시", "ex": "She wrote a short poem.", "ko": "그녀는 짧은 시를 썼어요."}, {"w": "interesting", "m": "흥미로운, 재미있는", "ex": "This poem is very interesting.", "ko": "이 시는 정말 흥미로워요."}, {"w": "going", "m": "가는 중인, ~할 예정인", "ex": "Are you going to the library?", "ko": "너는 도서관에 갈 거니?"}, {"w": "help", "m": "돕다, 도움", "ex": "Could you help me carry this box?", "ko": "이 상자 옮기는 것 좀 도와주시겠어요?"}, {"w": "please", "m": "부디, 제발 (공손한 부탁)", "ex": "Please close the door.", "ko": "문 좀 닫아 주세요."}, {"w": "may", "m": "~해도 될까요? (허락을 구할 때)", "ex": "May I use your pencil?", "ko": "네 연필을 써도 될까요?"}, {"w": "wait", "m": "기다리다", "ex": "We waited for the bus in the rain.", "ko": "우리는 빗속에서 버스를 기다렸어요."}, {"w": "bring", "m": "가져오다", "ex": "Could you bring some water for me?", "ko": "저에게 물 좀 가져다주시겠어요?"}, {"w": "clean up", "m": "정리하다", "ex": "Would you clean up your room, please?", "ko": "방 좀 정리해 주겠니?"}, {"w": "laugh", "m": "웃다", "ex": "Everyone laughed at his joke.", "ko": "모두가 그의 농담에 웃었어요."}, {"w": "careful", "m": "조심하는", "ex": "Please be careful with the glass cup.", "ko": "유리컵을 조심히 다뤄 주세요."}, {"w": "get together", "m": "함께 모이다", "ex": "Shall we get together after school?", "ko": "방과 후에 함께 모일까요?"}, {"w": "return", "m": "돌아오다", "ex": "What time will you return home?", "ko": "몇 시에 집에 돌아올 거니?"}, {"w": "exchange", "m": "교환하다", "ex": "Could I exchange this shirt for a bigger one?", "ko": "이 셔츠를 더 큰 것으로 교환할 수 있을까요?"}, {"w": "sorry", "m": "미안한", "ex": "I'm sorry, could you say that again?", "ko": "죄송해요, 다시 한번 말씀해 주시겠어요?"}, {"w": "excited", "m": "신난", "ex": "We are excited to play together.", "ko": "우리는 함께 놀게 되어 신나요."}, {"w": "worried", "m": "걱정하는", "ex": "Don't be worried, I will help you.", "ko": "걱정하지 마, 내가 도와줄게."}, {"w": "proud", "m": "자랑스러운", "ex": "She was proud of her poem.", "ko": "그녀는 자신의 시를 자랑스러워했어요."}, {"w": "curious", "m": "호기심 많은", "ex": "I am curious about your idea.", "ko": "나는 네 생각이 궁금해."}, {"w": "happened", "m": "일어났다", "ex": "Tell me what happened, please.", "ko": "무슨 일이 있었는지 말해 주세요."}, {"w": "idea", "m": "생각", "ex": "Would you like to share your idea?", "ko": "네 생각을 나눠 줄래?"}]}};
+
+// SET_ID: 이 word_player.html 버전 식별용 일련번호(YYYYMMDD-NN).
+// 단어를 바꿔서 새로 배포할 때마다 이 값도 새 날짜/번호로 바꿔줄 것
+// (PDF 파일명 규칙과 동일한 형식 — 같이 생성한 PDF와 세트를 맞춰서 추적하기 위함).
+var SET_ID = "20260812-01";
+document.getElementById('setIdTag').textContent = "세트 " + SET_ID;
+
+// ---------- 가벼운 비밀번호 게이트 ----------
+// 검색·우연한 링크 유입을 막는 용도일 뿐, 진짜 보안은 아님(정적 페이지라
+// 페이지 소스를 보면 아래 SITE_PASSWORD 값이 그대로 보임 — 마음먹고 우회하려는
+// 사람은 못 막음). 비밀번호를 바꾸려면 아래 값만 원하는 문자열로 바꾸면 됨.
+var SITE_PASSWORD = "solsol";
+var GATE_KEY = "wp_gate_ok_v1";
+var gateCard = document.getElementById('gateCard');
+var mainCard = document.getElementById('card');
+var gatePwInput = document.getElementById('gatePwInput');
+var gateSubmitBtn = document.getElementById('gateSubmitBtn');
+var gateError = document.getElementById('gateError');
+
+function unlockGate(){
+  gateCard.classList.add('hidden');
+  mainCard.classList.remove('hidden');
+  try{ localStorage.setItem(GATE_KEY, '1'); }catch(e){ /* 저장소 사용 불가 시 무시 */ }
+}
+
+function showGate(){
+  mainCard.classList.add('hidden');
+  gateCard.classList.remove('hidden');
+  gatePwInput.focus();
+}
+
+function checkGatePassword(){
+  if (gatePwInput.value === SITE_PASSWORD){
+    unlockGate();
+  } else {
+    gateError.textContent = "비밀번호가 올바르지 않아요";
+    gatePwInput.value = '';
+    gatePwInput.focus();
+  }
+}
+
+var alreadyUnlocked = false;
+try{ alreadyUnlocked = localStorage.getItem(GATE_KEY) === '1'; }catch(e){ /* 무시 */ }
+if (alreadyUnlocked){ unlockGate(); } else { showGate(); }
+
+gateSubmitBtn.addEventListener('click', checkGatePassword);
+gatePwInput.addEventListener('keydown', function(e){
+  if (e.key === 'Enter') checkGatePassword();
+});
+
+// order: 화면에 보여줄 순서(인덱스 배열). 셔플해도 WORDS 자체는 안 건드리고
+// 이 배열만 섞어서, 연습 체크 저장은 항상 원래 단어 인덱스(order[i]) 기준으로 함.
+var order = WORDS.map(function(_, idx){ return idx; });
+var i = 0;
+var isShuffled = false;
+
+var startScreen = document.getElementById('startScreen');
+var playScreen = document.getElementById('playScreen');
+var wordEl = document.getElementById('wordEl');
+var meanEl = document.getElementById('meanEl');
+var exEl = document.getElementById('exEl');
+var koEl = document.getElementById('koEl');
+var meanBtn = document.getElementById('meanBtn');
+var progressEl = document.getElementById('progress');
+var modeTag = document.getElementById('modeTag');
+var barFill = document.getElementById('barFill');
+var nextBtn = document.getElementById('nextBtn');
+var prevBtn = document.getElementById('prevBtn');
+var shuffleBtn = document.getElementById('shuffleBtn');
+var shuffleStartBtn = document.getElementById('shuffleStartBtn');
+var practiceCheck = document.getElementById('practiceCheck');
+var practiceResetBtn = document.getElementById('practiceResetBtn');
+var quizSetup = document.getElementById('quizSetup');
+var quizBackBtn = document.getElementById('quizBackBtn');
+var quizConfirmBtn = document.getElementById('quizConfirmBtn');
+var playerMinusBtn = document.getElementById('playerMinus');
+var playerPlusBtn = document.getElementById('playerPlus');
+var playerCountVal = document.getElementById('playerCountVal');
+var playerNameListEl = document.getElementById('playerNameList');
+var quizListenBtn = document.getElementById('quizListenBtn');
+var scoreboardEl = document.getElementById('scoreboard');
+var scoreGridEl = document.getElementById('scoreGrid');
+var scoreResetBtn = document.getElementById('scoreResetBtn');
+var startControlsRow = document.querySelector('#startScreen .controls');
+var startShuffleRow = document.querySelector('.start-shuffle-row');
+var studyModeRow = document.getElementById('studyModeRow');
+
+// ---------- 학습 방식(영한/한영) 선택 ----------
+// 영한(ko-hidden, 기본값): 기존과 동일 — 영단어·예문 보임, 한글 뜻·해석은 버튼으로 확인.
+// 한영(en-hidden): 한글 뜻·해석이 보이고, 영단어·예문은 "단어 보기" 버튼으로 확인.
+// '순서대로 시작'에만 적용되고, '섞어서 시작(퀴즈)'은 기존처럼 문제마다 무작위로 뒤집힘(변경 없음).
+// 어느 모드든 음성 재생은 항상 영어(단어·예문)만 하며, 한글 음성 재생은 추가하지 않음.
+var studyMode = 'ko-hidden';
+var modeKoHiddenBtn = document.getElementById('modeKoHiddenBtn');
+var modeEnHiddenBtn = document.getElementById('modeEnHiddenBtn');
+function setStudyMode(m){
+  studyMode = m;
+  modeKoHiddenBtn.classList.toggle('active', m === 'ko-hidden');
+  modeEnHiddenBtn.classList.toggle('active', m === 'en-hidden');
+}
+modeKoHiddenBtn.addEventListener('click', function(){ setStudyMode('ko-hidden'); });
+modeEnHiddenBtn.addEventListener('click', function(){ setStudyMode('en-hidden'); });
+
+var statusEl = document.getElementById('statusEl');
+var pauseBtn = document.getElementById('pauseBtn');
+var autoTimer = null;
+var WORD_PAUSE_MS = 2000;     // 단어 재생 후 대기 (문제없다고 확인됨, 그대로 유지)
+var MIN_EX_PAUSE_MS = 3200;   // 예문 재생 후 최소 대기 (따라 말하기엔 2초가 너무 짧다는 피드백 반영)
+var MAX_EX_PAUSE_MS = 6500;
+function examplePauseFor(text){
+  // 문장 길이(단어 수)에 비례해서 따라 말할 시간을 넉넉히 줌
+  var wordCount = (text || "").trim().split(/\s+/).filter(Boolean).length;
+  var ms = wordCount * 480 + 1600;
+  return Math.max(MIN_EX_PAUSE_MS, Math.min(MAX_EX_PAUSE_MS, ms));
+}
+var isPaused = false;
+var meanRevealed = false;
+
+// ---------- 단어 단독 재생 발음 교정 ----------
+// 예문(문장) 속에서는 문맥 덕분에 정확히 읽히는데, 단어 하나만 뚝 떼어 읽으면
+// 음성엔진이 철자가 같은 다른 언어 단어로 오인해 다르게 읽는 경우가 있음
+// (예: come → 이탈리아어 "come"[코메]로 오인, Windows/Edge 내장 음성에서 확인됨).
+// 마침표를 붙여도 Edge에서는 여전히 단어 자체를 다시 판별해 소용없었고,
+// "kuhm"처럼 사전에 없는 표기는 규칙 기반 엔진이 이상하게 풀어 읽는 부작용이
+// 있어서, 짧은 CVC(자음-모음-자음) 패턴으로 더 단순화함(cup/cut/run과 같은
+// 규칙으로 짧은 모음이 나오길 기대). 문제 되는 단어가 더 생기면 아래 사전에
+// 한 줄만 추가하면 됨.
+var SPEAK_OVERRIDES = {
+  "come": "kum"
+};
+function speakTextFor(word){
+  var key = (word || "").toLowerCase();
+  return SPEAK_OVERRIDES.hasOwnProperty(key) ? SPEAK_OVERRIDES[key] : word;
+}
+
+function setMeanRevealed(v){
+  meanRevealed = v;
+  meanEl.style.visibility = v ? "visible" : "hidden";
+  koEl.style.visibility = v ? "visible" : "hidden";
+  var revealLabel = currentReversed ? "단어" : "뜻";
+  meanBtn.textContent = v ? (revealLabel + " 숨기기") : (revealLabel + " 보기");
+  meanBtn.classList.toggle('is-revealed', v);
+}
+
+meanBtn.addEventListener('click', function(){
+  setMeanRevealed(!meanRevealed);
+});
+
+// 퀴즈 모드에서 수동으로 누를 때만 재생: 단어 → (연습모드와 같은 간격) → 예문
+// (자동 다음 문제 넘어감은 없음 — 다 들으면 여기서 끝, 버튼을 또 눌러야 다시 재생됨)
+function quizPlayWordAndExample(){
+  var item = WORDS[order[i]];
+  speak(speakTextFor(item.w), function(){
+    setTimeout(function(){
+      speak(item.ex, null);
+    }, WORD_PAUSE_MS);
+  });
+}
+
+quizListenBtn.addEventListener('click', function(){
+  quizPlayWordAndExample();
+});
+
+function clearAutoTimer(){
+  if (autoTimer){ clearTimeout(autoTimer); autoTimer = null; }
+}
+
+function setPausedUI(paused){
+  isPaused = paused;
+  pauseBtn.innerHTML = paused ? "&#9658;" : "&#10074;&#10074;";
+  pauseBtn.title = paused ? "계속 듣기" : "일시정지";
+  pauseBtn.classList.toggle('is-paused', paused);
+}
+
+// 기기에 설치된 음성 중 더 자연스러운 걸 우선 선택 (가능하면).
+// iOS/iPadOS는 기본으로 저용량 'Compact' 음성을 쓰는 경우가 많아 빠르고 단조롭게
+// 들릴 수 있음 — Enhanced/Premium 음성이 설치돼 있으면 그걸 우선 사용.
+var selectedVoice = null;
+function pickBestVoice(){
+  if (!('speechSynthesis' in window)) return;
+  var voices = speechSynthesis.getVoices();
+  if (!voices || !voices.length) return;
+  var enVoices = voices.filter(function(v){
+    return v.lang && v.lang.toLowerCase().indexOf('en') === 0;
+  });
+  if (!enVoices.length) return;
+  selectedVoice =
+    enVoices.find(function(v){ return /enhanced|premium|neural/i.test(v.name); }) ||
+    enVoices.find(function(v){ return v.lang.toLowerCase() === 'en-us' && !/compact/i.test(v.name); }) ||
+    enVoices.find(function(v){ return v.lang.toLowerCase() === 'en-us'; }) ||
+    enVoices[0];
+}
+if ('speechSynthesis' in window){
+  pickBestVoice();
+  speechSynthesis.onvoiceschanged = pickBestVoice;
+}
+
+function speak(text, onEnd){
+  statusEl.textContent = "";
+  if (!('speechSynthesis' in window)){
+    statusEl.textContent = "이 브라우저는 음성 재생을 지원하지 않아요.";
+    return;
+  }
+  try{
+    speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US";
+    if (selectedVoice) u.voice = selectedVoice;
+    u.rate = 0.82;
+    u.pitch = 1;
+    if (onEnd) u.onend = onEnd;
+    u.onerror = function(e){
+      // cancel()로 의도적으로 끊은 경우 'canceled'/'interrupted'가 뜨는데,
+      // 이건 실제 오류가 아니라 다음 발음을 재생하려고 이전 걸 끊은 정상 동작임.
+      // 소리는 실제로 잘 나오므로 사용자에게 오류로 보여줄 필요 없음.
+      if (e && (e.error === 'canceled' || e.error === 'interrupted')) return;
+      statusEl.textContent = "음성 재생 오류: " + (e && e.error ? e.error : "알 수 없음");
+    };
+    speechSynthesis.speak(u);
+  }catch(e){
+    statusEl.textContent = "재생 오류: " + e.message;
+  }
+}
+
+// ---------- 셔플(퀴즈 모드) / 학습 방식(영한·한영) ----------
+// reversed[i]: order[i] 위치의 문제를 "뜻 보고 단어 맞히기"로 뒤집을지 여부.
+// 순서대로(학습) 모드: 시작 화면에서 고른 studyMode를 모든 단어에 동일하게 적용
+//   (영한 → 전부 false, 한영 → 전부 true). 무작위가 아니라 세션 내내 고정.
+// 퀴즈 모드: 기존과 동일하게 매 문제 50% 확률로 뒤집어서 두 가지 유형이 섞여 나옴
+//   (studyMode 선택과 무관 — 변경 없음).
+var reversed = order.map(function(){ return false; });
+function shuffleOrder(){
+  for (var k = order.length - 1; k > 0; k--){
+    var j = Math.floor(Math.random() * (k+1));
+    var tmp = order[k]; order[k] = order[j]; order[j] = tmp;
+  }
+}
+function resetOrderSequential(){
+  order = WORDS.map(function(_, idx){ return idx; });
+}
+function generateReversedFlags(){
+  reversed = order.map(function(){ return Math.random() < 0.5; });
+}
+function applyStudyModeReversed(){
+  var flag = (studyMode === 'en-hidden');
+  reversed = order.map(function(){ return flag; });
+}
+function setModeTag(){
+  if (isShuffled){
+    modeTag.classList.remove('hidden');
+    modeTag.textContent = "퀴즈 · " + order.length + "문제";
+  } else if (studyMode === 'en-hidden'){
+    modeTag.classList.remove('hidden');
+    modeTag.textContent = "한영";
+  } else {
+    modeTag.classList.add('hidden');
+  }
+}
+
+// ---------- 단어 수(WORDS.length) 기준 동적 텍스트/버튼 세팅 ----------
+// 세트별 고정 30개 페이지든, 드롭다운으로 범위를 바꾸는 복습 페이지든 이 함수
+// 하나로 공통 대응. 화면에 박혀 있던 "30개" 표기를 전부 WORDS.length 기준으로
+// 계산해서, 몇 번을 다시 호출해도(드롭다운 변경 등) 항상 최신 상태로 맞춰짐.
+var TOTAL_WORDS = 0;
+var quizQuestionCount = 0;
+var customCountInput = document.getElementById('customCountInput');
+var countButtonsEl = document.getElementById('countButtons');
+
+function applyWordsSelection(){
+  TOTAL_WORDS = WORDS.length;
+  quizQuestionCount = TOTAL_WORDS;
+
+  progressEl.textContent = "0 / " + TOTAL_WORDS;
+  document.getElementById('startTitleEl').textContent = "단어 " + TOTAL_WORDS + "개를 들어요";
+  document.getElementById('practiceTitleEl').textContent = "🙋 " + TOTAL_WORDS + "개 전체 진행 체크";
+  document.getElementById('practiceHintEl').textContent =
+    "단어 " + TOTAL_WORDS + "개를 한 번 다 들으면(Listening) 1회 체크 → 다 따라 말하면(Following) " +
+    "1회 체크 → 다 섀도잉하면(Shadowing) 1회 체크. 이렇게 3바퀴 반복해요.";
+
+  customCountInput.setAttribute('max', TOTAL_WORDS);
+  customCountInput.setAttribute('placeholder', '직접 입력 (1~' + TOTAL_WORDS + ')');
+  customCountInput.value = '';
+
+  // 10문제/20문제/전체 버튼: 재호출해도 안전하도록 매번 완전히 새로 그림
+  // (이전 버튼 상태를 재활용하지 않음 — 드롭다운으로 범위가 바뀌어도 꼬이지 않게).
+  countButtonsEl.innerHTML = '';
+  [10, 20].forEach(function(p){
+    if (p >= TOTAL_WORDS) return;
+    var btn = document.createElement('button');
+    btn.className = 'qty-btn';
+    btn.textContent = p + '문제';
+    btn.setAttribute('data-count', p);
+    countButtonsEl.appendChild(btn);
+  });
+  var allBtn = document.createElement('button');
+  allBtn.className = 'qty-btn active';
+  allBtn.textContent = TOTAL_WORDS + '문제 (전체)';
+  allBtn.setAttribute('data-count', TOTAL_WORDS);
+  countButtonsEl.appendChild(allBtn);
+}
+
+// 문제 수 버튼은 매번 새로 그려지므로, 이벤트는 부모에 한 번만 위임해서 연결
+countButtonsEl.addEventListener('click', function(e){
+  var btn = e.target.closest('.qty-btn');
+  if (!btn) return;
+  countButtonsEl.querySelectorAll('.qty-btn').forEach(function(b){
+    b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  quizQuestionCount = parseInt(btn.getAttribute('data-count'), 10);
+  customCountInput.value = '';
+});
+
+customCountInput.addEventListener('input', function(){
+  var v = parseInt(customCountInput.value, 10);
+  if (!isNaN(v) && v >= 1){
+    quizQuestionCount = Math.min(v, WORDS.length);
+    countButtonsEl.querySelectorAll('.qty-btn').forEach(function(b){
+      b.classList.remove('active');
+    });
+  }
+});
+
+// ---------- 복습 범위 드롭다운(SETS가 있을 때만) ----------
+var setSelectRow = document.getElementById('setSelectRow');
+var setSelectEl = document.getElementById('setSelect');
+if (SETS && Object.keys(SETS).length > 1){
+  setSelectRow.classList.remove('hidden');
+  Object.keys(SETS).forEach(function(key){
+    var opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = SETS[key].label;
+    setSelectEl.appendChild(opt);
+  });
+  WORDS = SETS[setSelectEl.value].words;
+  setSelectEl.addEventListener('change', function(){
+    WORDS = SETS[setSelectEl.value].words;
+    applyWordsSelection();
+  });
+} else {
+  setSelectRow.classList.add('hidden');
+}
+
+applyWordsSelection();
+
+var playerNames = [''];
+
+function renderPlayerNameInputs(){
+  playerNameListEl.innerHTML = '';
+  playerNames.forEach(function(name, idx){
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'player-name-input';
+    input.value = name;
+    input.placeholder = '참가자 ' + (idx + 1);
+    input.addEventListener('input', function(){
+      playerNames[idx] = input.value;
+    });
+    playerNameListEl.appendChild(input);
+  });
+  playerCountVal.textContent = playerNames.length;
+}
+renderPlayerNameInputs();
+
+playerMinusBtn.addEventListener('click', function(){
+  if (playerNames.length <= 1) return;
+  playerNames.pop();
+  renderPlayerNameInputs();
+});
+playerPlusBtn.addEventListener('click', function(){
+  if (playerNames.length >= 40) return;
+  playerNames.push('');
+  renderPlayerNameInputs();
+});
+
+shuffleStartBtn.addEventListener('click', function(){
+  studyModeRow.classList.add('hidden');
+  startControlsRow.classList.add('hidden');
+  startShuffleRow.classList.add('hidden');
+  quizSetup.classList.remove('hidden');
+});
+
+quizBackBtn.addEventListener('click', function(){
+  quizSetup.classList.add('hidden');
+  studyModeRow.classList.remove('hidden');
+  startControlsRow.classList.remove('hidden');
+  startShuffleRow.classList.remove('hidden');
+});
+
+// ---------- 채점판(여러 명 정답 체크 · 누적 점수) ----------
+var quizPlayerCount = 0;
+var quizPlayerNames = [];
+var quizScores = [];
+var quizMarkedThisQ = [];
+
+function buildScoreboard(names){
+  quizPlayerNames = names.slice();
+  quizPlayerCount = quizPlayerNames.length;
+  quizScores = new Array(quizPlayerCount).fill(0);
+  quizMarkedThisQ = new Array(quizPlayerCount).fill(false);
+  renderScoreboard();
+}
+function renderScoreboard(){
+  scoreGridEl.innerHTML = '';
+  for (var p = 0; p < quizPlayerCount; p++){
+    var label = (quizPlayerNames[p] && quizPlayerNames[p].trim())
+      ? quizPlayerNames[p].trim() : ('참가자 ' + (p+1));
+    var card = document.createElement('div');
+    card.className = 'score-card';
+
+    var btn = document.createElement('button');
+    btn.className = 'score-btn' + (quizMarkedThisQ[p] ? ' is-correct' : '');
+    btn.setAttribute('data-player', p);
+    btn.innerHTML = '<span class="score-num">' + label + '</span>' +
+                     '<span class="score-val">' + quizScores[p] + '</span>';
+
+    var penaltyBtn = document.createElement('button');
+    penaltyBtn.className = 'score-penalty';
+    penaltyBtn.setAttribute('data-player', p);
+    penaltyBtn.title = '벌점 -1 (손들고 방해, 새치기 등)';
+    penaltyBtn.textContent = '−1 벌점';
+
+    card.appendChild(btn);
+    card.appendChild(penaltyBtn);
+    scoreGridEl.appendChild(card);
+  }
+}
+scoreGridEl.addEventListener('click', function(e){
+  var penaltyBtn = e.target.closest('.score-penalty');
+  if (penaltyBtn){
+    var pp = parseInt(penaltyBtn.getAttribute('data-player'), 10);
+    quizScores[pp] -= 1;
+    renderScoreboard();
+    return;
+  }
+  var btn = e.target.closest('.score-btn');
+  if (!btn) return;
+  var p = parseInt(btn.getAttribute('data-player'), 10);
+  quizMarkedThisQ[p] = !quizMarkedThisQ[p];
+  quizScores[p] += quizMarkedThisQ[p] ? 1 : -1;
+  renderScoreboard();
+});
+scoreResetBtn.addEventListener('click', function(){
+  quizScores = quizScores.map(function(){ return 0; });
+  quizMarkedThisQ = quizMarkedThisQ.map(function(){ return false; });
+  renderScoreboard();
+});
+
+// ---------- 연습 체크(Listening/Following/Shadowing) 저장 ----------
+// 단어 하나하나가 아니라 "30개 전체를 한 바퀴 돌았는지"를 3회씩 체크하는 구조.
+// 예: 30개 전체 Listening 1회 끝 → 체크, Following 1회 끝 → 체크,
+//     Shadowing 1회 끝 → 체크, 그다음 다시 Listening 2회차 → 체크 ...
+var PRACTICE_KEY = 'wp_set_progress_v1';
+var practiceData = { l:[false,false,false], f:[false,false,false], s:[false,false,false] };
+try{
+  var saved = JSON.parse(localStorage.getItem(PRACTICE_KEY) || 'null');
+  if (saved && saved.l && saved.f && saved.s) practiceData = saved;
+}catch(e){
+  /* 저장된 값이 없거나 손상된 경우 기본값 사용 */
+}
+
+function savePractice(){
+  try{ localStorage.setItem(PRACTICE_KEY, JSON.stringify(practiceData)); }
+  catch(e){ /* 저장소 사용 불가 시 조용히 무시 */ }
+}
+
+function renderPracticeChecks(){
+  ['l','f','s'].forEach(function(g){
+    for (var n = 0; n < 3; n++){
+      var cb = practiceCheck.querySelector('input[data-g="'+g+'"][data-n="'+n+'"]');
+      if (cb) cb.checked = !!practiceData[g][n];
+    }
+  });
+}
+
+practiceCheck.addEventListener('change', function(e){
+  var t = e.target;
+  if (!t || t.tagName !== 'INPUT') return;
+  var g = t.getAttribute('data-g');
+  var n = parseInt(t.getAttribute('data-n'), 10);
+  practiceData[g][n] = t.checked;
+  savePractice();
+});
+
+practiceResetBtn.addEventListener('click', function(){
+  practiceData = { l:[false,false,false], f:[false,false,false], s:[false,false,false] };
+  savePractice();
+  renderPracticeChecks();
+});
+
+renderPracticeChecks();
+
+var currentReversed = false;
+
+function render(){
+  var item = WORDS[order[i]];
+  currentReversed = !!reversed[i];
+  if (currentReversed){
+    // 퀴즈 "반대로" 문제: 뜻을 보여주고 영단어를 맞히게 함.
+    // 정답(영단어)이 담긴 텍스트는 전부 숨김 대상(mean/ko)에 넣고,
+    // 힌트(한글 뜻·한글 해석)만 보이는 자리(word/ex)에 넣음.
+    wordEl.textContent = item.m;
+    meanEl.textContent = item.w;
+    exEl.textContent = item.ko;
+    koEl.textContent = item.ex;
+  } else {
+    wordEl.textContent = item.w;
+    meanEl.textContent = item.m;
+    exEl.textContent = item.ex;
+    koEl.textContent = item.ko;
+  }
+  wordEl.classList.toggle('is-kr-prompt', currentReversed);
+  progressEl.textContent = (i+1) + " / " + order.length;
+  setModeTag();
+  barFill.style.width = ((i+1)/order.length*100) + "%";
+  prevBtn.style.visibility = (i === 0) ? "hidden" : "visible";
+  nextBtn.textContent = (i === order.length-1) ? "완료 · 처음으로" : (isShuffled ? "다음 문제" : "다음 단어");
+  setMeanRevealed(false);
+
+  // 모드에 따라 패널 전환: 퀴즈 모드 → 채점판 표시 + 일시정지 버튼 숨김(자동재생 없음)
+  //                       학습 모드 → 진행 체크 표시 + 일시정지 버튼 표시
+  practiceCheck.classList.toggle('hidden', isShuffled);
+  scoreboardEl.classList.toggle('hidden', !isShuffled);
+  pauseBtn.classList.toggle('hidden', isShuffled);
+  quizListenBtn.classList.toggle('hidden', !isShuffled);
+  if (isShuffled && quizPlayerCount > 0){
+    quizMarkedThisQ = quizMarkedThisQ.map(function(){ return false; });
+    renderScoreboard();
+  }
+}
+
+// autoAdvance: 단어 재생 → 2초 뒤 예문 재생 → 2초 뒤 다음 단어로 자동 이동
+// (일시정지 중이면 어느 단계에서든 멈춤). 학습(순서대로) 모드에서만 동작함.
+// 퀴즈 모드는 자동재생이 없음 — 화면 표시만 하고, 소리는 버튼을 눌러야 나옴
+// (반대로 문제일 때 정답 발음이 자동으로 새어나가는 것도 방지됨).
+function playCurrent(autoAdvance){
+  clearAutoTimer();
+  render();
+  if (isShuffled) return;
+  speak(speakTextFor(WORDS[order[i]].w), function(){
+    if (!autoAdvance || isPaused) return;
+    autoTimer = setTimeout(function(){
+      if (isPaused) return;
+      var exText = WORDS[order[i]].ex;
+      speak(exText, function(){
+        if (!autoAdvance || isPaused) return;
+        autoTimer = setTimeout(function(){
+          if (isPaused) return;
+          if (i < order.length - 1){
+            i++;
+            playCurrent(true);
+          } else {
+            setMeanRevealed(true);
+            wordEl.textContent = "🎉 끝!";
+            meanEl.textContent = "처음부터 버튼을 눌러 다시 들어보세요";
+            exEl.textContent = "";
+            koEl.textContent = "";
+            setPausedUI(false);
+          }
+        }, examplePauseFor(exText));
+      });
+    }, WORD_PAUSE_MS);
+  });
+}
+
+pauseBtn.addEventListener('click', function(){
+  if (!isPaused){
+    setPausedUI(true);
+    clearAutoTimer();
+    if (window.speechSynthesis && speechSynthesis.speaking){
+      speechSynthesis.pause();
+    }
+  } else {
+    setPausedUI(false);
+    if (window.speechSynthesis && speechSynthesis.paused){
+      speechSynthesis.resume();
+    } else {
+      playCurrent(true);
+    }
+  }
+});
+
+document.getElementById('startBtn').addEventListener('click', function(){
+  isShuffled = false;
+  resetOrderSequential();
+  applyStudyModeReversed();
+  startScreen.classList.add('hidden');
+  playScreen.classList.remove('hidden');
+  i = 0;
+  setPausedUI(false);
+  setMeanRevealed(false);
+  playCurrent(true);
+});
+
+quizConfirmBtn.addEventListener('click', function(){
+  isShuffled = true;
+  resetOrderSequential();
+  shuffleOrder();
+  order = order.slice(0, Math.min(quizQuestionCount, order.length));
+  generateReversedFlags();
+  buildScoreboard(playerNames);
+  quizSetup.classList.add('hidden');
+  startScreen.classList.add('hidden');
+  playScreen.classList.remove('hidden');
+  i = 0;
+  setPausedUI(false);
+  setMeanRevealed(false);
+  playCurrent(true);
+});
+
+shuffleBtn.addEventListener('click', function(){
+  // 재생 중 다시 섞기: 문제 수는 그대로, 점수는 초기화하지 않고 유지
+  isShuffled = true;
+  resetOrderSequential();
+  shuffleOrder();
+  order = order.slice(0, Math.min(quizQuestionCount, order.length));
+  generateReversedFlags();
+  i = 0;
+  setPausedUI(false);
+  setMeanRevealed(false);
+  playCurrent(true);
+});
+
+nextBtn.addEventListener('click', function(){
+  setPausedUI(false);
+  setMeanRevealed(false);
+  if (i === order.length-1){
+    i = 0;
+  } else {
+    i++;
+  }
+  playCurrent(true);
+});
+
+prevBtn.addEventListener('click', function(){
+  if (i > 0){
+    setPausedUI(false);
+    setMeanRevealed(false);
+    i--;
+    playCurrent(true);
+  }
+});
+
+document.getElementById('replayBtn').addEventListener('click', function(){
+  if (isShuffled){
+    quizPlayWordAndExample();
+    return;
+  }
+  setPausedUI(false);
+  playCurrent(true);
+});
+
+document.getElementById('restartBtn').addEventListener('click', function(){
+  setPausedUI(false);
+  setMeanRevealed(false);
+  i = 0;
+  playCurrent(true);
+});
+
+document.getElementById('homeBtn').addEventListener('click', function(){
+  clearAutoTimer();
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  setPausedUI(false);
+  playScreen.classList.add('hidden');
+  startScreen.classList.remove('hidden');
+  quizSetup.classList.add('hidden');
+  studyModeRow.classList.remove('hidden');
+  startControlsRow.classList.remove('hidden');
+  startShuffleRow.classList.remove('hidden');
+  // 홈 화면에서는 채점판(퀴즈 전용)이 아니라 진행 체크(항상 표시용)가 보여야 함.
+  // render()가 마지막으로 남긴 hidden 상태가 그대로 남아있으면 퀴즈 도중 홈으로
+  // 나갔을 때 채점판이 계속 떠 있는 문제가 있어 여기서 명시적으로 정리함.
+  scoreboardEl.classList.add('hidden');
+  practiceCheck.classList.remove('hidden');
+});
+
+wordEl.addEventListener('click', function(){
+  if (isShuffled){
+    quizPlayWordAndExample();
+    return;
+  }
+  setPausedUI(false);
+  playCurrent(true);
+});
+</script>
+</body>
+</html>
