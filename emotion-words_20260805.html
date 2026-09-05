@@ -714,7 +714,7 @@ function speak(text, onEnd){
     var u = new SpeechSynthesisUtterance(text);
     u.lang = "en-US";
     if (selectedVoice) u.voice = selectedVoice;
-    u.rate = 0.82;
+    u.rate = 0.7;
     u.pitch = 1;
     if (onEnd) u.onend = onEnd;
     u.onerror = function(e){
